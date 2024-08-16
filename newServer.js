@@ -71,17 +71,27 @@ async function findUser(user_name) {
 
 // GET /api/users/:id - Obter detalhes de um usuário específico
 app.post('/api/v1/users/login', async (req, res) => {
-    const { name, password } = req.body
+    const { username, password } = req.body
     let connection
 
     try {
         connection = await getConnection()
         const result = await connection.execute(
-            `SELECT * FROM usuarios WHERE usuario = :name and senha = :password`,
-            [name, password]
+            `SELECT senha FROM usuarios WHERE usuario = :username`,
+            [username]
         )
-        res.status(200)
-
+        if (result.rows.length === 0) {
+            return res.status(401).json({ message: "Usuário ou senha inválidos." });
+          }
+      
+          const storedPassword = result.rows[0][0];
+          const passwordMatch = password = storedPassword? true : false
+      
+          if (!passwordMatch) {
+            return res.status(401).json({ message: "Usuário ou senha inválidos." });
+          }
+          res.status(200).json({ message: "Autenticação bem-sucedida!" })
+        
     } catch (err) {
         console.error(err)
         res.status(500).json({ message: 'Database error' })
