@@ -70,7 +70,7 @@ async function findUser(user_name) {
 }
 
 // GET /api/users/:id - Obter detalhes de um usuário específico
-app.get('/api/v1/users/login', async (req, res) => {
+app.post('/api/v1/users/login', async (req, res) => {
     const { name, password } = req.body
     let connection
 
