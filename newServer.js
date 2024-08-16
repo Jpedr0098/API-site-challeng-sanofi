@@ -80,12 +80,12 @@ app.post('/api/v1/users/login', async (req, res) => {
             `SELECT senha FROM usuarios WHERE usuario = :username`,
             [username]
         )
-        if (result.rows.length === 0) {
+        if (result.rows.length == 0) {
             return res.status(401).json({ message: "Usuário ou senha inválidos." });
           }
       
           const storedPassword = result.rows[0][0];
-          const passwordMatch = password = storedPassword? true : false
+          const passwordMatch = password == storedPassword? true : false
       
           if (!passwordMatch) {
             return res.status(401).json({ message: "Usuário ou senha inválidos." });
