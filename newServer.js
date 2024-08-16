@@ -80,7 +80,7 @@ app.get('/api/v1/users/login', async (req, res) => {
             `SELECT * FROM usuarios WHERE usuario = :name and senha = :password`,
             [name, password]
         )
-        
+
     } catch (err) {
         console.error(err)
         res.status(500).json({ message: 'Database error' })
@@ -169,3 +169,6 @@ app.delete('/api/v1/users/:id', async (req, res) => {
         }
     }
 })
+
+// Inicia o servidor
+app.listen(port, () => console.log(`Servidor rodando em http://localhost:${port}`))
