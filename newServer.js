@@ -80,6 +80,7 @@ app.get('/api/v1/users/login', async (req, res) => {
             `SELECT * FROM usuarios WHERE usuario = :name and senha = :password`,
             [name, password]
         )
+        res.status(200)
 
     } catch (err) {
         console.error(err)
