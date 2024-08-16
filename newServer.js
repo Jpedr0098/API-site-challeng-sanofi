@@ -80,8 +80,7 @@ app.get('/api/v1/users/login', async (req, res) => {
             `SELECT * FROM usuarios WHERE usuario = :name and senha = :password`,
             [name, password]
         )
-        res.status(201).json({ id: result.outBinds.id[0], name, password })
-
+        
     } catch (err) {
         console.error(err)
         res.status(500).json({ message: 'Database error' })
