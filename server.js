@@ -21,6 +21,7 @@ async function getConnection() {
 app.use(cors())
 app.use(express.json())
 
+
 app.get('/api/users', async (req, res) => {
     let connection
 
