@@ -70,12 +70,26 @@ async function findUser(user_name) {
 }
 
 // GET /api/users/:id - Obter detalhes de um usuário específico
-app.get('/api/v1/users/:user_name', async (req, res) => {
+app.get('/api/v1/users/login', async (req, res) => {
+    const { name, password } = req.body
+    let connection
+
     try {
-        const user = await findUser(req.params.id)
-        user ? res.json(user) : res.status(404).json({ message: 'User not found' })
+        connection = await getConnection()
+        const result = await connection.execute(
+            `SELECT * FROM usuarios WHERE usuario = :name and senha = :password`,
+            [name, password]
+        )
+        res.status(201).json({ id: result.outBinds.id[0], name, password })
+
     } catch (err) {
+        console.error(err)
         res.status(500).json({ message: 'Database error' })
+
+    } finally {
+        if (connection) {
+            await connection.close()
+        }
     }
 })
 
