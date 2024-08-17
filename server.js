@@ -68,7 +68,7 @@ async function findUser(id) {
 }
 
 // GET /api/users/:id - Obter detalhes de um usuário específico
-app.get('/api/users/:id', async (req, res) => {
+app.get('/api/v1/users/:id', async (req, res) => {
     try {
         const user = await findUser(req.params.id)
         user ? res.json(user) : res.status(404).json({ message: 'User not found' })
@@ -78,7 +78,7 @@ app.get('/api/users/:id', async (req, res) => {
 })
 
 // POST /api/users - Adicionar um novo usuário
-app.post('/api/users', async (req, res) => {
+app.post('/api/v1/users', async (req, res) => {
     const { name, email } = req.body
     let connection
 
@@ -102,7 +102,7 @@ app.post('/api/users', async (req, res) => {
 })
 
 // PUT /api/users/:id - Atualizar um usuário existente
-app.put('/api/users/:id', async (req, res) => {
+app.put('/api/v1/users/:id', async (req, res) => {
     const { name } = req.body
     let connection
 
@@ -130,7 +130,7 @@ app.put('/api/users/:id', async (req, res) => {
 })
 
 // DELETE /api/users/:id - Deletar um usuário
-app.delete('/api/users/:id', async (req, res) => {
+app.delete('/api/v1/users/:id', async (req, res) => {
     let connection
 
     try {
