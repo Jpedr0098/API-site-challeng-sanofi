@@ -153,8 +153,9 @@ app.delete('/api/v1/users/:id', async (req, res) => {
 })
 
 //TESTES
+//=============================================================================
 
-// Função auxiliar para encontrar um usuário por ID
+//função auxiliar para o metodo get
 async function findUser2(id) {
     let connection
 
@@ -177,6 +178,7 @@ async function findUser2(id) {
     }
 }
 
+//metodo get
 app.get('/api/v2/users/:id', async (req, res) => {
     try {
         const user = await findUser2(req.params.id)
