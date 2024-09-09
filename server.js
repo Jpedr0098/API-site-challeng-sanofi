@@ -155,7 +155,7 @@ app.delete('/api/v1/users/:id', async (req, res) => {
 //TESTES
 
 // Função auxiliar para encontrar um usuário por ID
-async function findUser(id) {
+async function findUser2(id) {
     let connection
 
     try {
@@ -179,7 +179,7 @@ async function findUser(id) {
 
 app.get('/api/v2/users/:id', async (req, res) => {
     try {
-        const user = await findUser(req.params.id)
+        const user = await findUser2(req.params.id)
         user ? res.json(user) : res.status(404).json({ message: 'User not found' })
     } catch (err) {
         res.status(500).json({ message: 'Database error' })
