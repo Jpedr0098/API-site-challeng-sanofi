@@ -152,5 +152,40 @@ app.delete('/api/v1/users/:id', async (req, res) => {
     }
 })
 
+//TESTES
+
+// Função auxiliar para encontrar um usuário por ID
+async function findUser(id) {
+    let connection
+
+    try {
+        connection = await getConnection()
+        const result = await connection.execute(
+            `SELECT * FROM usuarios WHERE user = :id`,
+            [id],
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        )
+
+        return result.rows[0]
+    } catch (err) {
+        console.error(err)
+        throw err
+    } finally {
+        if (connection) {
+            await connection.close()
+        }
+    }
+}
+
+app.get('/api/v2/users/:id', async (req, res) => {
+    try {
+        const user = await findUser(req.params.id)
+        user ? res.json(user) : res.status(404).json({ message: 'User not found' })
+    } catch (err) {
+        res.status(500).json({ message: 'Database error' })
+    }
+})
+
+
 // Inicia o servidor
 app.listen(port, () => console.log(`Servidor rodando em http://localhost:${port}`))
