@@ -161,7 +161,7 @@ async function findUser2(id) {
     try {
         connection = await getConnection()
         const result = await connection.execute(
-            `SELECT * FROM usuarios WHERE user = :id`,
+            `SELECT * FROM usuarios WHERE usuario = :id`,
             [id],
             { outFormat: oracledb.OUT_FORMAT_OBJECT }
         )
