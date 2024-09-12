@@ -74,7 +74,7 @@ async function findUser(id) {
 }
 
 // GET /api/users/:id - Obter detalhes de um usuário específico
-app.get('/api/v1/users/:id', async (req, res) => {
+app.get('/api/users/:id', async (req, res) => {
     try {
         const user = await findUser(req.params.id)
         user ? res.json(user) : res.status(404).json({ message: 'User not found' })
