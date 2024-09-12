@@ -190,5 +190,123 @@ app.delete('/api/v1/users/:user', async (req, res) => {
     }
 })
 
+//TESTES
+//==============================================================================
+// Função auxiliar para encontrar um usuário por ID
+async function findUser(id) {
+    let connection
+
+    try {
+        connection = await getConnection()
+        const result = await connection.execute(
+            `SELECT * FROM usuarios WHERE user = :id`,
+            [id],
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        )
+
+        return result.rows[0]
+    } catch (err) {
+        console.error(err)
+        throw err
+    } finally {
+        if (connection) {
+            await connection.close()
+        }
+    }
+}
+
+app.get('/api/v2/users/:id', async (req, res) => {
+    try {
+        const user = await findUser(req.params.id)
+        user ? res.json(user) : res.status(404).json({ message: 'User not found' })
+    } catch (err) {
+        res.status(500).json({ message: 'Database error' })
+    }
+})
+
+//=====================================================
+// Upload de arquivos
+app.post('/upload', upload.single('file'), async (req, res) => {
+    const { file } = req;
+    let connection;
+
+    try {
+        connection = await getConnection();
+        const fileData = fs.readFileSync(file.path)
+
+        const result = await connection.execute(
+            `INSERT INTO pdf_files (file_name, file_data) VALUES (:file_name, EMPTY_BLOB()) RETURNING file_data INTO :file_data`,
+            {
+                file_name: file.originalname,
+                file_data: { type: oracledb.BLOB, dir: oracledb.BIND_OUT }
+            },
+            { autoCommit: false }
+        )
+
+        const lob = result.outBinds.file_data[0]
+        lob.write(fileData, async (err) => {
+            if (err) {
+                return res.status(500).send('Erro ao escrever no BLOB.');
+            }
+            lob.close()
+            await connection.commit()
+            res.send({ success: true })
+        })
+    } catch (err) {
+        console.error(err)
+        res.status(500).send('Erro ao enviar o arquivo.')
+    } finally {
+        fs.unlinkSync(file.path) // Remove o arquivo temporário
+        if (connection) await connection.close()
+    }
+})
+
+// Listar arquivos
+app.get('/list-files', async (req, res) => {
+    let connection
+
+    try {
+        connection = await getConnection()
+        const result = await connection.execute(`SELECT id, file_name FROM pdf_files`);
+        res.json(result.rows)
+    } catch (err) {
+        console.error(err)
+        res.status(500).send('Erro ao listar arquivos.')
+    } finally {
+        if (connection) await connection.close()
+    }
+})
+
+// Download de arquivo
+app.get('/download/:id', async (req, res) => {
+    const fileId = req.params.id
+    let connection
+
+    try {
+        connection = await getConnection()
+        const result = await connection.execute(
+            `SELECT file_name, file_data FROM pdf_files WHERE id = :id`,
+            [fileId]
+        )
+
+        if (result.rows.length === 0) {
+            return res.status(404).send('Arquivo não encontrado.')
+        }
+
+        const { file_name, file_data } = result.rows[0]
+        const lob = file_data
+
+        res.setHeader('Content-Disposition', `attachment; filename=${file_name}`)
+        lob.on('data', (chunk) => res.write(chunk))
+        lob.on('end', () => res.end())
+    } catch (err) {
+        console.error(err)
+        res.status(500).send('Erro ao fazer download do arquivo.')
+    } finally {
+        if (connection) await connection.close()
+    }
+})
+
+
 // Inicia o servidor
 app.listen(port, () => console.log(`Servidor rodando em http://localhost:${port}`))
