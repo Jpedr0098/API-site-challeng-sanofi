@@ -95,7 +95,7 @@ app.post('/api/v1/users', async (req, res) => {
             [usuario, senha, acesso, { dir: oracledb.BIND_OUT, type: oracledb.NUMBER }],
             { autoCommit: true }
         )
-        res.status(201).json({ id: result.outBinds.id[0], usuario, nivel_acesso})
+        res.status(201).json({ id: result.outBinds.id[0], usuario, nivel_acesso })
 
     } catch (err) {
         console.error(err)
@@ -122,7 +122,7 @@ app.put('/api/v1/users/:id', async (req, res) => {
         )
         if (result.rowsAffected > 0) {
             res.json({ id: req.params.id, senha, nivel_acesso })
-            
+
         } else {
             res.status(404).json({ message: 'User not found' })
         }
@@ -199,7 +199,7 @@ async function findUser2(id) {
     try {
         connection = await getConnection()
         const result = await connection.execute(
-            `SELECT * FROM usuarios WHERE user = :id`,
+            `SELECT * FROM usuariosv2 WHERE usuario = :id`,
             [id],
             { outFormat: oracledb.OUT_FORMAT_OBJECT }
         )
@@ -223,6 +223,38 @@ app.get('/api/v2/users/:id', async (req, res) => {
         res.status(500).json({ message: 'Database error' })
     }
 })
+
+async function findFunc(id) {
+    let connection
+
+    try {
+        connection = await getConnection()
+        const result = await connection.execute(
+            `SELECT * FROM funcionarios WHERE usuarios_id_user = :id`,
+            [id],
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        )
+
+        return result.rows[0]
+    } catch (err) {
+        console.error(err)
+        throw err
+    } finally {
+        if (connection) {
+            await connection.close()
+        }
+    }
+}
+
+app.get('/api/v2/funcio/:id', async (req, res) => {
+    try {
+        const user = await findUser2(req.params.id)
+        user ? res.json(user) : res.status(404).json({ message: 'User not found' })
+    } catch (err) {
+        res.status(500).json({ message: 'Database error' })
+    }
+})
+
 
 // Inicia o servidor
 app.listen(port, () => console.log(`Servidor rodando em http://localhost:${port}`))
