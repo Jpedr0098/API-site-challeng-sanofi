@@ -1,11 +1,9 @@
 const express = require('express')
 const oracledb = require('oracledb')
-const cors = require('cors')
-const multer = require('multer')
+const cors = require('cors')
 const fs = require('fs')
 
-require('dotenv').config() // Carrega variáveis de ambiente do arquivo .env
-const upload = multer({ dest: 'uploads/' }); // Diretório temporário de upload
+require('dotenv').config() // Carrega variáveis de ambiente do arquivo .env
 const app = express()
 const port = 3000
 
