@@ -1,13 +1,11 @@
 const express = require('express')
 const oracledb = require('oracledb')
-const cors = require('cors')
-const fs = require('fs')
+const cors = require('cors')
 
-require('dotenv').config() // Carrega variáveis de ambiente do arquivo .env
+require('dotenv').config() // Carrega variáveis de ambiente do arquivo .env
+
 const app = express()
 const port = 3000
-
-//oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT;
 
 // Configurações de conexão com o banco de dados usando variáveis de ambiente
 const dbConfig = {
@@ -228,13 +226,13 @@ async function findFunc(id) {
     try {
         connection = await getConnection()
         const result = await connection.execute(
-            `SELECT * FROM funcionarios WHERE usuarios_id_user = :id`,
+            `SELECT * FROM funcionarios WHERE USUARIOS_ID_USER = :id`,
             [id],
             { outFormat: oracledb.OUT_FORMAT_OBJECT }
         )
 
         return result.rows[0]
-    } catch (err) {
+    } catch (err) {  
         console.error(err)
         throw err
     } finally {
@@ -246,7 +244,7 @@ async function findFunc(id) {
 
 app.get('/api/v2/funcio/:id', async (req, res) => {
     try {
-        const user = await findUser2(req.params.id)
+        const user = await findFunc(req.params.id)
         user ? res.json(user) : res.status(404).json({ message: 'User not found' })
     } catch (err) {
         res.status(500).json({ message: 'Database error' })
