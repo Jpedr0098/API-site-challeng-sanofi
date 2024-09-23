@@ -232,7 +232,7 @@ async function findFunc(id) {
         )
 
         return result.rows[0]
-    } catch (err) {  
+    } catch (err) {
         console.error(err)
         throw err
     } finally {
@@ -245,6 +245,99 @@ async function findFunc(id) {
 app.get('/api/v2/funcio/:id', async (req, res) => {
     try {
         const user = await findFunc(req.params.id)
+        user ? res.json(user) : res.status(404).json({ message: 'User not found' })
+    } catch (err) {
+        res.status(500).json({ message: 'Database error' })
+    }
+})
+
+async function findSolicitacao(id) {
+    let connection
+
+    try {
+        connection = await getConnection()
+        const result = await connection.execute(
+            `SELECT * FROM solicitacao WHERE FUNCIONARIOS_ID_FUNC = :id`,
+            [id],
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        )
+
+        return result.rows[0]
+    } catch (err) {
+        console.error(err)
+        throw err
+    } finally {
+        if (connection) {
+            await connection.close()
+        }
+    }
+}
+
+app.get('/api/v2/solic/:id', async (req, res) => {
+    try {
+        const user = await findSolicitacao(req.params.id)
+        user ? res.json(user) : res.status(404).json({ message: 'User not found' })
+    } catch (err) {
+        res.status(500).json({ message: 'Database error' })
+    }
+})
+
+async function findEventFunc(id) {
+    let connection
+
+    try {
+        connection = await getConnection()
+        const result = await connection.execute(
+            `SELECT * FROM event_func WHERE FUNC_ID_FUNC = :id`,
+            [id],
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        )
+
+        return result.rows[0]
+    } catch (err) {
+        console.error(err)
+        throw err
+    } finally {
+        if (connection) {
+            await connection.close()
+        }
+    }
+}
+
+app.get('/api/v2/eventfunc/:id', async (req, res) => {
+    try {
+        const user = await findEventFunc(req.params.id)
+        user ? res.json(user) : res.status(404).json({ message: 'User not found' })
+    } catch (err) {
+        res.status(500).json({ message: 'Database error' })
+    }
+})
+
+async function findEvent(id) {
+    let connection
+
+    try {
+        connection = await getConnection()
+        const result = await connection.execute(
+            `SELECT * FROM eventos WHERE ID_EVENT = :id`,
+            [id],
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        )
+
+        return result.rows[0]
+    } catch (err) {
+        console.error(err)
+        throw err
+    } finally {
+        if (connection) {
+            await connection.close()
+        }
+    }
+}
+
+app.get('/api/v2/event/:id', async (req, res) => {
+    try {
+        const user = await findEvent(req.params.id)
         user ? res.json(user) : res.status(404).json({ message: 'User not found' })
     } catch (err) {
         res.status(500).json({ message: 'Database error' })
