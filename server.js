@@ -262,7 +262,7 @@ async function findSolicitacao(id) {
             { outFormat: oracledb.OUT_FORMAT_OBJECT }
         )
 
-        return result.rows[0]
+        return result.rows
     } catch (err) {
         console.error(err)
         throw err
@@ -293,7 +293,7 @@ async function findEventFunc(id) {
             { outFormat: oracledb.OUT_FORMAT_OBJECT }
         )
 
-        return result.rows[0]
+        return result.rows
     } catch (err) {
         console.error(err)
         throw err
@@ -324,7 +324,7 @@ async function findEvent(id) {
             { outFormat: oracledb.OUT_FORMAT_OBJECT }
         )
 
-        return result.rows[0]
+        return result.rows
     } catch (err) {
         console.error(err)
         throw err
@@ -343,6 +343,44 @@ app.get('/api/v2/event/:id', async (req, res) => {
         res.status(500).json({ message: 'Database error' })
     }
 })
+
+
+async function findEvents(ids) {
+    let connection
+
+    try {
+        connection = await getConnection()
+        // Cria uma string de placeholders para a lista de IDs, como ":id0, :id1, :id2, ..."
+        const placeholders = ids.map((_, index) => `:id${index}`).join(', ')
+        
+        // Executa a query com os placeholders e passa os valores da lista de IDs
+        const result = await connection.execute(
+            `SELECT * FROM eventos WHERE ID_EVENT IN (${placeholders})`,
+            ids,  // Passa a lista diretamente
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        )
+
+        return result.rows
+    } catch (err) {
+        console.error(err)
+        throw err
+    } finally {
+        if (connection) {
+            await connection.close()
+        }
+    }
+}
+
+app.get('/api/v3/events', async (req, res) => {
+    try {
+        const ids = req.query.ids.split(',').map(id => Number(id.trim())) // Converte os IDs da query string em um array de números
+        const events = await findEvents(ids)
+        events.length ? res.json(events) : res.status(404).json({ message: 'No events found' })
+    } catch (err) {
+        res.status(500).json({ message: 'Database error' })
+    }
+})
+
 
 
 // Inicia o servidor
