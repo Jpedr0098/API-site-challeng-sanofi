@@ -91,7 +91,7 @@ app.post('/api/v1/users', async (req, res) => {
             [usuario, senha, acesso, { dir: oracledb.BIND_OUT, type: oracledb.NUMBER }],
             { autoCommit: true }
         )
-        res.status(201).json({ id: result.outBinds.id[0], usuario, nivel_acesso })
+        res.status(201).json({ id: result.outBinds.id[0]})
 
     } catch (err) {
         console.error(err)
@@ -381,6 +381,85 @@ app.get('/api/v3/events', async (req, res) => {
     }
 })
 
+
+app.post('/api/v2/solicitacao', async (req, res) => {
+    const { motivo, idFuncio, endereco } = req.body
+    let connection
+
+    try {
+        connection = await getConnection()
+        const result = await connection.execute(
+            `INSERT INTO solicitacao (ID_SOLIC, DT_SOLIC, MOTIVO, STATUS, FUNCIONARIOS_ID_FUNC, ENDERECO) VALUES (seq_solicitacao.NEXTVAL, SYSDATE, :motivo, 'solicitado', :idFuncio, :endereco)`,
+            [motivo, idFuncio, endereco],
+            { autoCommit: true }
+        )
+        res.status(201)
+
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ message: 'Database error' })
+
+    } finally {
+        if (connection) {
+            await connection.close()
+        }
+    }
+})
+
+
+app.put('/api/v2/solicitacao/:id', async (req, res) => {
+    const { aprovacao } = req.body
+    let connection
+
+    try {
+        connection = await getConnection()
+        const result = await connection.execute(
+            `UPDATE solicitacao SET STATUS = :aprovacao WHERE ID_SOLIC = :id`,
+            [aprovacao, req.params.id],
+            { autoCommit: true }
+        )
+        if (result.rowsAffected > 0) {
+            res.json({ id: req.params.id, aprovacao })
+
+        } else {
+            res.status(404).json({ message: 'User not found' })
+        }
+
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ message: 'Database error' })
+
+    } finally {
+        if (connection) {
+            await connection.close()
+        }
+    }
+})
+
+
+app.post('/api/v2/solicitacao/equipamentos', async (req, res) => {
+    const { solicID, equipID, Qdte} = req.body
+    let connection
+
+    try {
+        connection = await getConnection()
+        await connection.execute(
+            `INSERT INTO solic_equip (SOLIC_ID_SOLIC, EQUIP_ID_EQUIP, QUANTIDADE) VALUES (:solicID, :equipID, :Qdte)`,
+            [solicID, equipID, Qdte, { dir: oracledb.BIND_OUT, type: oracledb.NUMBER }],
+            { autoCommit: true }
+        )
+        res.status(201)
+
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ message: 'Database error' })
+
+    } finally {
+        if (connection) {
+            await connection.close()
+        }
+    }
+})
 
 
 // Inicia o servidor
