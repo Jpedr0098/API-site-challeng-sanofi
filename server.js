@@ -91,7 +91,7 @@ app.post('/api/v1/users', async (req, res) => {
             [usuario, senha, acesso, { dir: oracledb.BIND_OUT, type: oracledb.NUMBER }],
             { autoCommit: true }
         )
-        res.status(201).json({ id: result.outBinds.id[0]})
+        res.status(201).json({ id: result.outBinds.id[0] })
 
     } catch (err) {
         console.error(err)
@@ -282,15 +282,37 @@ app.get('/api/v2/solic/:id', async (req, res) => {
     }
 })
 
-async function findSolicitacaoAprovacoes(ids) {
+async function findSolicitacao2(id) {
     let connection
 
     try {
         connection = await getConnection()
-        const placeholders = ids.map((_, index) => `:id${index}`).join(', ')
         const result = await connection.execute(
-            `SELECT * FROM solicitacao WHERE STATUS = 'solicitado' AND FUNCIONARIOS_ID_FUNC IN ${placeholders}`,
-            [ids],
+            `SELECT 
+            s.FUNCIONARIOS_id_func AS id_funcionario, 
+            s.id_solic AS id_solicitacao, 
+            s.dt_solic AS data_solicitacao, 
+            s.motivo AS motivo_solicitacao, 
+            s.status AS status_solicitacao, 
+            s.prev_entrega AS data_prevista_entrega,
+            LISTAGG(se.quantidade || 'x ' || e.nome, ', ') 
+                WITHIN GROUP (ORDER BY e.nome) AS equipamentos_solicitados
+        FROM 
+            solicitacao s
+        JOIN 
+            solic_equip se ON s.id_solic = se.SOLIC_id_solic
+        JOIN 
+            equipamentos e ON se.EQUIP_id_equip = e.id_equip
+        WHERE 
+            s.FUNCIONARIOS_id_func = :id
+        GROUP BY 
+            s.FUNCIONARIOS_id_func, 
+            s.id_solic, 
+            s.dt_solic, 
+            s.motivo, 
+            s.status,
+            s.prev_entrega`,
+            [id],
             { outFormat: oracledb.OUT_FORMAT_OBJECT }
         )
 
@@ -305,15 +327,148 @@ async function findSolicitacaoAprovacoes(ids) {
     }
 }
 
-app.get('/api/v2/solicAprov', async (req, res) => {
+app.get('/api/v2/solic2/:id', async (req, res) => {
     try {
-        const ids = req.query.ids.split(',').map(id => Number(id.trim())) // Converte os IDs da query string em um array de números
-        const solicAprovacoes = await findSolicitacaoAprovacoes(ids)
-        solicAprovacoes.length ? res.json(solicAprovacoes) : res.status(404).json({ message: 'No aprovacoes found' })
+        const user = await findSolicitacao2(req.params.id)
+        user ? res.json(user) : res.status(404).json({ message: 'User not found' })
     } catch (err) {
         res.status(500).json({ message: 'Database error' })
     }
 })
+
+// async function findSolicitacaoAprovacoes(ids) {
+//     let connection
+
+//     try {
+//         connection = await getConnection()
+//         const placeholders = ids.map((_, index) => `:id${index}`).join(', ')
+//         const result = await connection.execute(
+//             // `SELECT * FROM solicitacao WHERE STATUS = 'solicitado' AND FUNCIONARIOS_ID_FUNC IN ${placeholders}`,
+//             `
+//       SELECT 
+//         s.FUNCIONARIOS_id_func AS id_funcionario, 
+//         s.id_solic AS id_solicitacao, 
+//         s.dt_solic AS data_solicitacao, 
+//         s.motivo AS motivo_solicitacao, 
+//         s.status AS status_solicitacao, 
+//         LISTAGG(se.quantidade || 'x ' || e.nome, ', ') 
+//           WITHIN GROUP (ORDER BY e.nome) AS equipamentos_solicitados
+//       FROM 
+//         solicitacao s
+//       JOIN 
+//         solic_equip se ON s.id_solic = se.SOLIC_id_solic
+//       JOIN 
+//         equipamentos e ON se.EQUIP_id_equip = e.id_equip
+//       WHERE 
+//         s.status = 'solicitado'
+//         AND s.FUNCIONARIOS_id_func IN ${placeholders}
+//       GROUP BY 
+//         s.FUNCIONARIOS_id_func, 
+//         s.id_solic, 
+//         s.dt_solic, 
+//         s.motivo, 
+//         s.status
+//     `,
+//             [ids],
+//             { outFormat: oracledb.OUT_FORMAT_OBJECT }
+//         )
+
+//         return result.rows
+//     } catch (err) {
+//         console.error(err)
+//         throw err
+//     } finally {
+//         if (connection) {
+//             await connection.close()
+//         }
+//     }
+// }
+
+// app.get('/api/v2/solicAprov', async (req, res) => {
+//     try {
+//         const ids = req.query.ids.split(',').map(id => Number(id.trim())) // Converte os IDs da query string em um array de números
+//         const solicAprovacoes = await findSolicitacaoAprovacoes(ids)
+//         solicAprovacoes.length ? res.json(solicAprovacoes) : res.status(404).json({ message: 'No aprovacoes found' })
+//     } catch (err) {
+//         res.status(500).json({ message: 'Database error' })
+//     }
+// })
+
+async function findSolicitacaoAprovacoes(ids) {
+    let connection;
+
+    try {
+        connection = await getConnection();
+
+        // Gerar placeholders dinâmicos para cada ID de funcionário
+        const placeholders = ids.map((_, index) => `:id${index}`).join(', ');
+        const binds = {};
+        ids.forEach((id, index) => {
+            binds[`id${index}`] = id;
+        });
+
+        // Executando a query com os placeholders e binds corretos
+        const result = await connection.execute(
+            `
+            SELECT 
+              s.FUNCIONARIOS_id_func AS id_funcionario, 
+              s.id_solic AS id_solicitacao, 
+              s.dt_solic AS data_solicitacao, 
+              s.motivo AS motivo_solicitacao, 
+              s.status AS status_solicitacao, 
+              LISTAGG(se.quantidade || 'x ' || e.nome, ', ') 
+                WITHIN GROUP (ORDER BY e.nome) AS equipamentos_solicitados
+            FROM 
+              solicitacao s
+            JOIN 
+              solic_equip se ON s.id_solic = se.SOLIC_id_solic
+            JOIN 
+              equipamentos e ON se.EQUIP_id_equip = e.id_equip
+            WHERE 
+              s.status = 'solicitado'
+              AND s.FUNCIONARIOS_id_func IN (${placeholders})
+            GROUP BY 
+              s.FUNCIONARIOS_id_func, 
+              s.id_solic, 
+              s.dt_solic, 
+              s.motivo, 
+              s.status
+            `,
+            binds,
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+
+        return result.rows;
+    } catch (err) {
+        console.error(err);
+        throw err;
+    } finally {
+        if (connection) {
+            await connection.close();
+        }
+    }
+}
+
+// Rota GET para buscar as solicitações
+app.get('/api/v2/solicAprov', async (req, res) => {
+    try {
+        // Extrair IDs da query string e converter para array de números
+        const ids = req.query.ids.split(',').map(id => Number(id.trim()));
+
+        if (!ids.length) {
+            return res.status(400).json({ message: 'Nenhum ID de funcionário foi fornecido.' });
+        }
+
+        const solicAprovacoes = await findSolicitacaoAprovacoes(ids);
+        if (solicAprovacoes.length) {
+            res.json(solicAprovacoes);
+        } else {
+            res.status(404).json({ message: 'Nenhuma solicitação encontrada.' });
+        }
+    } catch (err) {
+        res.status(500).json({ message: 'Erro no banco de dados.' });
+    }
+});
 
 async function findliderados(id) {
     let connection
@@ -321,7 +476,7 @@ async function findliderados(id) {
     try {
         connection = await getConnection()
         const result = await connection.execute(
-            `SELECT id_func, (nome || ' ' || sobrenome) AS nome_completo, email FROM funcionarios WHERE id_lider = :id`,
+            `SELECT ID_FUNC, (nome || ' ' || sobrenome) AS nome_completo, email FROM funcionarios WHERE id_lider = :id`,
             [id],
             { outFormat: oracledb.OUT_FORMAT_OBJECT }
         )
@@ -407,7 +562,7 @@ async function findEvents(ids) {
         connection = await getConnection()
         // Cria uma string de placeholders para a lista de IDs, como ":id0, :id1, :id2, ..."
         const placeholders = ids.map((_, index) => `:id${index}`).join(', ')
-        
+
         // Executa a query com os placeholders e passa os valores da lista de IDs
         const result = await connection.execute(
             `SELECT * FROM eventos WHERE ID_EVENT IN (${placeholders})`,
@@ -493,7 +648,7 @@ app.put('/api/v2/solicitacao/:id', async (req, res) => {
 
 
 app.post('/api/v2/solicitacao/equipamentos', async (req, res) => {
-    const {solicID, equipID, Qdte} = req.body
+    const { solicID, equipID, Qdte } = req.body
     let connection
 
     try {
